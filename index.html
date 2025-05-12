@@ -1,0 +1,356 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Movie Search and Watch Site</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+  <header class="bg-gray-800 p-4 flex items-center justify-between">
+    <h1 class="text-2xl font-bold flex items-center space-x-2">
+      <i class="fas fa-film text-red-500"></i>
+      <span>MovieFlix</span>
+    </h1>
+    <nav class="hidden md:flex space-x-6 text-gray-300">
+      <a href="#" class="hover:text-white transition">Home</a>
+      <a href="#" class="hover:text-white transition">Popular</a>
+      <a href="#" class="hover:text-white transition">Top Rated</a>
+      <a href="#" class="hover:text-white transition">Genres</a>
+    </nav>
+    <button
+      id="mobile-menu-button"
+      class="md:hidden text-gray-300 focus:outline-none"
+      aria-label="Toggle menu"
+    >
+      <i class="fas fa-bars fa-lg"></i>
+    </button>
+  </header>
+
+  <nav
+    id="mobile-menu"
+    class="bg-gray-800 text-gray-300 flex flex-col space-y-2 p-4 md:hidden hidden"
+  >
+    <a href="#" class="hover:text-white transition">Home</a>
+    <a href="#" class="hover:text-white transition">Popular</a>
+    <a href="#" class="hover:text-white transition">Top Rated</a>
+    <a href="#" class="hover:text-white transition">Genres</a>
+  </nav>
+
+  <main class="flex-grow container mx-auto px-4 py-6 flex flex-col">
+    <section class="mb-8">
+      <form id="search-form" class="flex max-w-xl mx-auto">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search for movies..."
+          class="flex-grow rounded-l-md px-4 py-3 text-gray-900 focus:outline-none"
+          aria-label="Search movies"
+          autocomplete="off"
+        />
+        <button
+          type="submit"
+          class="bg-red-600 hover:bg-red-700 px-6 rounded-r-md text-white font-semibold transition"
+          aria-label="Search"
+        >
+          <i class="fas fa-search"></i>
+        </button>
+      </form>
+    </section>
+
+    <section id="movies-section" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    </section>
+
+    <section
+      id="movie-player-section"
+      class="fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center p-4 hidden z-50"
+      aria-modal="true"
+      role="dialog"
+      aria-labelledby="movie-title"
+    >
+      <button
+        id="close-player"
+        class="absolute top-4 right-4 text-white text-3xl hover:text-red-600 focus:outline-none"
+        aria-label="Close player"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+      <h2 id="movie-title" class="text-3xl font-bold mb-4 text-center max-w-3xl"></h2>
+      <video
+        id="movie-video"
+        controls
+        class="w-full max-w-5xl rounded-md shadow-lg"
+        crossorigin="anonymous"
+      >
+        Your browser does not support the video tag.
+      </video>
+      <div class="mt-4 w-full max-w-5xl flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+        <label for="subtitle-select" class="block mb-2 sm:mb-0 font-semibold text-white">
+          Select Subtitle Language:
+        </label>
+        <select
+          id="subtitle-select"
+          class="flex-grow rounded-md px-3 py-2 bg-gray-800 text-white focus:outline-none"
+          aria-label="Select subtitle language"
+          disabled
+        >
+          <option value="">None</option>
+          <option value="en">English</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="zh">Chinese</option>
+          <option value="ar">Arabic</option>
+          <option value="ru">Russian</option>
+          <option value="hi">Hindi</option>
+          <option value="ja">Japanese</option>
+          <option value="pt">Portuguese</option>
+          <option value="it">Italian</option>
+          <option value="ko">Korean</option>
+          <option value="tr">Turkish</option>
+          <option value="nl">Dutch</option>
+          <option value="sv">Swedish</option>
+        </select>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-gray-800 text-gray-400 text-center py-4 mt-auto">
+    &copy; 2024 MovieFlix. All rights reserved.
+  </footer>
+
+  <script>
+    // Mobile menu toggle
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileMenuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+
+    // TMDb API key and base URL
+    // IMPORTANT: This is a public demo key with limited usage.
+    // For production, get your own API key from https://www.themoviedb.org/settings/api
+    const TMDB_API_KEY = 'a07e22bc18f5cb106bfe4cc1f83ad8ed'; // This is a known TMDb demo key
+    const TMDB_API_BASE = 'https://api.themoviedb.org/3';
+
+    const searchForm = document.getElementById('search-form');
+    const searchInput = document.getElementById('search-input');
+    const moviesSection = document.getElementById('movies-section');
+    const moviePlayerSection = document.getElementById('movie-player-section');
+    const movieTitle = document.getElementById('movie-title');
+    const movieVideo = document.getElementById('movie-video');
+    const subtitleSelect = document.getElementById('subtitle-select');
+    const closePlayerBtn = document.getElementById('close-player');
+
+    let currentMovieSubtitles = {};
+
+    // Remove all subtitle tracks
+    function removeAllTracks() {
+      const tracks = movieVideo.querySelectorAll('track');
+      tracks.forEach((track) => track.remove());
+    }
+
+    // Add subtitle track based on selected language and URL
+    function addSubtitleTrack(lang, url) {
+      removeAllTracks();
+      if (!lang || !url) return;
+      const track = document.createElement('track');
+      track.kind = 'subtitles';
+      track.label = lang.toUpperCase();
+      track.srclang = lang;
+      track.src = url;
+      track.default = true;
+      movieVideo.appendChild(track);
+    }
+
+    // Render movie cards from TMDb search results
+    function renderMovies(movies) {
+      moviesSection.innerHTML = '';
+      if (!movies || movies.length === 0) {
+        moviesSection.innerHTML =
+          '<p class="col-span-full text-center text-gray-400 text-lg">No movies found. Try another search.</p>';
+        return;
+      }
+      movies.forEach((movie) => {
+        const poster = movie.poster_path
+          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+          : 'https://placehold.co/500x750/png?text=No+Image+Available';
+        const movieCard = document.createElement('div');
+        movieCard.className =
+          'bg-gray-800 rounded-md shadow-md overflow-hidden cursor-pointer hover:shadow-red-600 transition flex flex-col';
+        movieCard.setAttribute('tabindex', '0');
+        movieCard.setAttribute('role', 'button');
+        movieCard.setAttribute('aria-pressed', 'false');
+        movieCard.setAttribute('aria-label', `Watch ${movie.title}`);
+
+        movieCard.innerHTML = `
+          <img
+            src="${poster}"
+            alt="Movie poster of ${movie.title}, released in ${movie.release_date ? movie.release_date.slice(0,4) : 'unknown year'}"
+            class="w-full h-72 object-cover"
+            loading="lazy"
+          />
+          <div class="p-4 flex flex-col flex-grow">
+            <h3 class="text-lg font-semibold mb-1 truncate">${movie.title}</h3>
+            <p class="text-gray-400 text-sm mb-2 flex-grow">${movie.overview ? movie.overview.slice(0, 100) + (movie.overview.length > 100 ? '...' : '') : 'No description available.'}</p>
+            <p class="text-gray-500 text-xs">Release: ${movie.release_date ? movie.release_date.slice(0,4) : 'N/A'}</p>
+          </div>
+        `;
+
+        movieCard.addEventListener('click', () => {
+          openMoviePlayer(movie);
+        });
+        movieCard.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openMoviePlayer(movie);
+          }
+        });
+
+        moviesSection.appendChild(movieCard);
+      });
+    }
+
+    // Open movie player modal and load streaming video + subtitles
+    // TMDb does not provide direct streaming links, so we will embed a YouTube trailer if available
+    async function openMoviePlayer(movie) {
+      movieTitle.textContent = movie.title;
+      movieVideo.src = '';
+      removeAllTracks();
+      subtitleSelect.value = '';
+      currentMovieSubtitles = {};
+      subtitleSelect.disabled = true;
+
+      moviePlayerSection.classList.remove('hidden');
+
+      try {
+        // Fetch videos for the movie (trailers)
+        const res = await fetch(`${TMDB_API_BASE}/movie/${movie.id}/videos?api_key=${TMDB_API_KEY}&language=en-US`);
+        if (!res.ok) throw new Error('Failed to fetch movie videos');
+        const data = await res.json();
+
+        // Find a YouTube trailer
+        const trailer = data.results.find(
+          (vid) => vid.site === 'YouTube' && vid.type === 'Trailer'
+        );
+
+        if (!trailer) {
+          movieVideo.innerHTML = 'Trailer not available.';
+          return;
+        }
+
+        // Replace video element with iframe for YouTube trailer
+        movieVideo.style.display = 'none';
+
+        // Remove any existing iframe
+        const existingIframe = moviePlayerSection.querySelector('iframe');
+        if (existingIframe) existingIframe.remove();
+
+        const iframe = document.createElement('iframe');
+        iframe.width = '100%';
+        iframe.height = '500';
+        iframe.src = `https://www.youtube.com/embed/${trailer.key}?autoplay=1&controls=1`;
+        iframe.title = `${movie.title} Trailer`;
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.className = 'rounded-md shadow-lg max-w-5xl';
+
+        moviePlayerSection.appendChild(iframe);
+
+        // Disable subtitles select as no subtitles for trailers
+        subtitleSelect.disabled = true;
+      } catch (error) {
+        console.error('Error loading movie player:', error);
+        movieVideo.innerHTML = 'Failed to load video.';
+      }
+    }
+
+    // Close movie player modal
+    function closeMoviePlayer() {
+      moviePlayerSection.classList.add('hidden');
+      movieVideo.pause();
+      movieVideo.src = '';
+      removeAllTracks();
+      subtitleSelect.value = '';
+      currentMovieSubtitles = {};
+      subtitleSelect.disabled = true;
+
+      // Remove YouTube iframe if exists
+      const iframe = moviePlayerSection.querySelector('iframe');
+      if (iframe) {
+        iframe.remove();
+      }
+      movieVideo.style.display = 'block';
+    }
+
+    // Event listeners
+    searchForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const query = searchInput.value.trim();
+      if (!query) return;
+      moviesSection.innerHTML =
+        '<p class="col-span-full text-center text-gray-400 text-lg">Loading...</p>';
+      try {
+        const res = await fetch(`${TMDB_API_BASE}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1&include_adult=false`);
+        if (!res.ok) throw new Error('Failed to fetch search results');
+        const data = await res.json();
+        renderMovies(data.results || []);
+      } catch (error) {
+        console.error('Search error:', error);
+        moviesSection.innerHTML =
+          '<p class="col-span-full text-center text-gray-400 text-lg">Failed to load search results.</p>';
+      }
+    });
+
+    closePlayerBtn.addEventListener('click', closeMoviePlayer);
+
+    subtitleSelect.addEventListener('change', () => {
+      const lang = subtitleSelect.value;
+      if (!lang) {
+        removeAllTracks();
+        return;
+      }
+      if (currentMovieSubtitles && currentMovieSubtitles[lang]) {
+        addSubtitleTrack(lang, currentMovieSubtitles[lang]);
+      }
+    });
+
+    // Close player on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !moviePlayerSection.classList.contains('hidden')) {
+        closeMoviePlayer();
+      }
+    });
+
+    // Load popular movies on page load
+    async function loadPopularMovies() {
+      moviesSection.innerHTML =
+        '<p class="col-span-full text-center text-gray-400 text-lg">Loading popular movies...</p>';
+      try {
+        const res = await fetch(`${TMDB_API_BASE}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=1`);
+        if (!res.ok) throw new Error('Failed to fetch popular movies');
+        const data = await res.json();
+        renderMovies(data.results || []);
+      } catch (error) {
+        console.error('Error loading popular movies:', error);
+        moviesSection.innerHTML =
+          '<p class="col-span-full text-center text-gray-400 text-lg">Failed to load popular movies.</p>';
+      }
+    }
+
+    loadPopularMovies();
+  </script>
+</body>
+</html>
